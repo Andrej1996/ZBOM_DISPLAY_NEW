@@ -1,0 +1,647 @@
+*&---------------------------------------------------------------------*
+*& Report  ZBOM_DISPLAY_NEW
+*&
+*&---------------------------------------------------------------------*
+*&
+*&
+*&---------------------------------------------------------------------*
+REPORT zbom_display_new.
+
+TABLES: zzbom, mara, makt, marm, zview_mara, zview_marm.
+
+TYPES: BEGIN OF st_table,
+         mandt           TYPE zzbom-mandt,
+         matnr           TYPE zzbom-matnr,
+         werks           TYPE zzbom-werks,
+*         spras           TYPE zzbom-spras,
+         maktx           TYPE zzbom-maktx,
+         stlan           TYPE zzbom-stlan,
+         stlal           TYPE zzbom-stlal,
+         stlst           TYPE zzbom-stlst,
+         bmeng           TYPE zzbom-bmeng,
+         bmein           TYPE zzbom-bmein,
+         hdatuv          TYPE zzbom-hdatuv,
+         stlnr           TYPE zzbom-stlnr,
+         stlkn           TYPE zzbom-stlkn,
+         vgknt           TYPE zzbom-vgknt,
+         vgpzl           TYPE zzbom-vgpzl,
+         stpoz           TYPE zzbom-stpoz,
+         datuv           TYPE zzbom-datuv,
+         aennr           TYPE zzbom-aennr,
+         aedat           TYPE zzbom-aedat,
+         aenam           TYPE zzbom-aenam,
+         posnr           TYPE zzbom-posnr,
+         idnrk           TYPE zzbom-idnrk,
+         sortf           TYPE zzbom-sortf,
+         meins           TYPE zzbom-meins,
+         menge           TYPE zzbom-menge,
+         kzaus           TYPE zzbom-kzaus,
+         ausdt           TYPE zzbom-ausdt,
+         nfmat           TYPE zzbom-nfmat,
+         kznfp           TYPE zzbom-kznfp,
+         nfgrp           TYPE zzbom-nfgrp,
+         nfeag           TYPE zzbom-nfeag,
+         stdpd           TYPE zzbom-stdpd,
+         mtart           TYPE zzbom-mtart,
+         spart           TYPE zzbom-spart,
+         dispo           TYPE zzbom-dispo,
+         zcolourcategory TYPE zzbom-zcolourcategory,
+
+         zprnum          TYPE mara-zprnum,
+         zalloy          TYPE mara-zalloy,
+         ztemper         TYPE mara-ztemper,
+         zlength         TYPE mara-zlength,
+
+         spras           TYPE makt-spras,
+         maktx1          TYPE makt-maktx,
+
+         umrez           TYPE marm-umrez,
+         umren           TYPE marm-umren,
+
+         zprnum_compn    TYPE zview_mara-zprnum_compn,
+         zalloy_compn    TYPE zview_mara-zalloy_compn,
+         ztemper_compn   TYPE zview_mara-ztemper_compn,
+         zlength_compn   TYPE zview_mara-zlength_compn,
+
+         umrez_compn     TYPE zview_marm-umrez_compn,
+         umren_compn     TYPE zview_marm-umren_compn,
+         meinh_compn     TYPE zview_marm-meinh_compn,
+
+         produce_pcs     TYPE p DECIMALS 3,
+         consume_pcs     TYPE p DECIMALS 3,
+         prod_pcs        TYPE p DECIMALS 3,
+         kg_produce      TYPE p DECIMALS 3,
+         kg_component    TYPE p DECIMALS 3,
+
+       END OF st_table.
+
+
+DATA: it_table TYPE TABLE OF st_table WITH HEADER LINE,
+      wa_table TYPE st_table.
+
+
+DATA: t_fieldcat            TYPE slis_t_fieldcat_alv WITH HEADER LINE.
+
+DATA: w_callback_subroutine TYPE slis_formname,
+      w_callback_program    LIKE sy-repid,
+      gd_layout             TYPE slis_layout_alv.
+
+DATA : wa_variant TYPE disvariant.
+
+wa_variant-report = sy-repid.
+*wa_variant-username = sy-uname.
+
+
+
+SELECTION-SCREEN: BEGIN OF BLOCK b1 WITH FRAME TITLE text-001.
+
+
+SELECT-OPTIONS:
+
+              s_matnr  FOR zzbom-matnr,
+              s_werks  FOR zzbom-werks,
+              s_spras  FOR zzbom-spras,
+              s_maktx  FOR zzbom-maktx,
+              s_stlan  FOR zzbom-stlan,
+              s_stlal  FOR zzbom-stlal,
+              s_hdatuv FOR zzbom-hdatuv,
+              s_idnrk  FOR zzbom-idnrk,
+              s_zprnum FOR zzbom-zprnum,
+              s_zalloy FOR zzbom-zalloy,
+              s_ztempe FOR zzbom-ztemper,
+              s_spart  FOR zzbom-spart,
+              s_zpr_co FOR zview_mara-zprnum_compn.
+
+
+
+
+SELECTION-SCREEN: END OF BLOCK b1.
+
+
+
+START-OF-SELECTION.
+
+  PERFORM output_data.
+  PERFORM build_catalog.
+  PERFORM display_data.
+
+END-OF-SELECTION.
+
+
+
+*&---------------------------------------------------------------------*
+*&      Form  DISPLAY_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM display_data .
+
+  CALL FUNCTION 'REUSE_ALV_GRID_DISPLAY'
+    EXPORTING
+*     I_INTERFACE_CHECK       = ' '
+*     I_BYPASSING_BUFFER      = ' '
+*     I_BUFFER_ACTIVE         = ' '
+      i_callback_program      = sy-cprog
+*     I_CALLBACK_PF_STATUS_SET          = ' '
+      i_callback_user_command = w_callback_subroutine
+*     I_CALLBACK_TOP_OF_PAGE  = ' '
+*     I_CALLBACK_HTML_TOP_OF_PAGE       = ' '
+*     I_CALLBACK_HTML_END_OF_LIST       = ' '
+*     I_STRUCTURE_NAME        =
+*     I_BACKGROUND_ID         = ' '
+*     I_GRID_TITLE            =
+*     I_GRID_SETTINGS         =
+      is_layout               = gd_layout
+      it_fieldcat             = t_fieldcat[]
+*     IT_EXCLUDING            =
+*     IT_SPECIAL_GROUPS       =
+*     IT_SORT                 =
+*     IT_FILTER               =
+*     IS_SEL_HIDE             =
+     I_DEFAULT               = 'X'
+     I_SAVE                  = 'A'
+     IS_VARIANT              = wa_variant
+*     IT_EVENTS               =
+*     IT_EVENT_EXIT           =
+*     IS_PRINT                =
+*     IS_REPREP_ID            =
+*     I_SCREEN_START_COLUMN   = 0
+*     I_SCREEN_START_LINE     = 0
+*     I_SCREEN_END_COLUMN     = 0
+*     I_SCREEN_END_LINE       = 0
+*     I_HTML_HEIGHT_TOP       = 0
+*     I_HTML_HEIGHT_END       = 0
+*     IT_ALV_GRAPHICS         =
+*     IT_HYPERLINK            =
+*     IT_ADD_FIELDCAT         =
+*     IT_EXCEPT_QINFO         =
+*     IR_SALV_FULLSCREEN_ADAPTER        =
+*   IMPORTING
+*     E_EXIT_CAUSED_BY_CALLER =
+*     ES_EXIT_CAUSED_BY_USER  =
+    TABLES
+      t_outtab                = it_table
+    EXCEPTIONS
+      program_error           = 1
+      OTHERS                  = 2.
+  IF sy-subrc <> 0.
+* Implement suitable error handling here
+  ENDIF.
+
+
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  OUTPUT_DATA
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM output_data .
+
+  SELECT  zzbom~mandt,
+          zzbom~matnr,
+          zzbom~werks,
+*          zzbom~spras,
+          zzbom~maktx,
+          zzbom~stlan,
+          zzbom~stlal,
+          zzbom~stlst,
+          zzbom~bmeng,
+          zzbom~bmein,
+          zzbom~hdatuv,
+          zzbom~stlnr,
+          zzbom~stlkn,
+          zzbom~vgknt,
+          zzbom~vgpzl,
+          zzbom~stpoz,
+          zzbom~datuv,
+          zzbom~aennr,
+          zzbom~aedat,
+          zzbom~aenam,
+          zzbom~posnr,
+          zzbom~idnrk,
+          zzbom~sortf,
+          zzbom~meins,
+          zzbom~menge,
+          zzbom~kzaus,
+          zzbom~ausdt,
+          zzbom~nfmat,
+          zzbom~kznfp,
+          zzbom~nfgrp,
+          zzbom~nfeag,
+          zzbom~stdpd,
+          zzbom~mtart,
+          zzbom~spart,
+          zzbom~dispo,
+          zzbom~zcolourcategory,
+
+          mara~zprnum,
+          mara~zalloy,
+          mara~ztemper,
+          mara~zlength,
+
+          makt~spras,
+          makt~maktx,
+
+          marm~umrez,
+          marm~umren,
+*          marm~matkx,
+
+          zview_mara~zprnum_compn,
+          zview_mara~zalloy_compn,
+          zview_mara~ztemper_compn,
+          zview_mara~zlength_compn,
+
+          zview_marm~umrez_compn,
+          zview_marm~umren_compn,
+          zview_marm~meinh_compn
+
+
+          INTO TABLE @it_table FROM zzbom AS zzbom  INNER JOIN zview_mara AS zview_mara  ON zzbom~idnrk = zview_mara~matnr
+
+                                                    INNER JOIN mara       AS mara        ON  zzbom~matnr = mara~matnr
+
+                                                    LEFT JOIN makt        AS makt        ON  zzbom~idnrk = makt~matnr
+
+                                                    LEFT JOIN marm        AS marm        ON  zzbom~matnr = marm~matnr
+
+                                                    LEFT JOIN zview_marm  AS zview_marm  ON  zzbom~idnrk = zview_marm~matnr
+
+
+                                                    WHERE
+                                                         zzbom~matnr             IN @s_matnr  AND
+                                                         zzbom~werks             IN @s_werks  AND
+                                                         zzbom~spras             IN @s_spras  AND
+                                                         zzbom~maktx             IN @s_maktx  AND
+                                                         zzbom~stlan             IN @s_stlan  AND
+                                                         zzbom~stlal             IN @s_stlal  AND
+                                                         zzbom~hdatuv            IN @s_hdatuv AND
+                                                         zzbom~idnrk             IN @s_idnrk  AND
+                                                         zzbom~zprnum            IN @s_zprnum AND
+                                                         zzbom~zalloy            IN @s_zalloy AND
+                                                         zzbom~ztemper           IN @s_ztempe AND
+                                                         zzbom~spart             IN @s_spart  AND
+                                                         zview_mara~zprnum_compn IN @s_zpr_co AND
+                                                         makt~spras              LIKE  'E%'   AND
+                                                         marm~meinh              EQ 'ST'.
+
+
+
+  LOOP AT it_table INTO it_table.
+
+
+    it_table-produce_pcs  = ( it_table-bmeng       / it_table-umrez       ) * it_table-umren.
+    it_table-consume_pcs  = ( it_table-menge       / it_table-umrez_compn ) * it_table-umren_compn.
+    it_table-prod_pcs     = it_table-zlength_compn / it_table-zlength.
+    it_table-kg_produce   = it_table-umrez         / it_table-umren.
+    it_table-kg_component = it_table-umrez_compn   / it_table-umren_compn.
+
+
+    MODIFY it_table.
+
+
+
+  ENDLOOP.
+
+ENDFORM.
+
+
+*&---------------------------------------------------------------------*
+*&      Form  BUILD_CATALOG
+*&---------------------------------------------------------------------*
+*       text
+*----------------------------------------------------------------------*
+*  -->  p1        text
+*  <--  p2        text
+*----------------------------------------------------------------------*
+FORM build_catalog .
+
+
+  t_fieldcat-fieldname = 'MATNR'.
+  t_fieldcat-seltext_m = 'Produced Material'.
+  t_fieldcat-no_zero   = 'X'.
+  t_fieldcat-outputlen = 13.
+  t_fieldcat-col_pos = 1.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MANDT'.
+  t_fieldcat-seltext_m = 'Client'.
+  t_fieldcat-col_pos = 2.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'WERKS'.
+  t_fieldcat-seltext_m = 'Plant'.
+  t_fieldcat-col_pos = 3.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'SPRAS'.
+  t_fieldcat-seltext_m = 'Language Key'.
+  t_fieldcat-col_pos = 4.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MAKTX'.
+  t_fieldcat-seltext_m = 'Material Description'.
+  t_fieldcat-outputlen = 30.
+  t_fieldcat-col_pos = 5.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STLAN'.
+  t_fieldcat-seltext_m = 'BOM Usage'.
+  t_fieldcat-col_pos = 6.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STLAL'.
+  t_fieldcat-seltext_m = 'Alternative BOM'.
+  t_fieldcat-col_pos = 7.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STLST'.
+  t_fieldcat-seltext_m = 'BOM Status'.
+  t_fieldcat-col_pos = 8.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'BMENG'.
+  t_fieldcat-seltext_m = 'Base Quantity'.
+  t_fieldcat-col_pos = 9.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'BMEIN'.
+  t_fieldcat-seltext_m = 'Base Unit'.
+  t_fieldcat-col_pos = 10.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'HDATUV'.
+  t_fieldcat-seltext_m = 'Valid From'.
+  t_fieldcat-col_pos = 11.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STLNR'.
+  t_fieldcat-seltext_m = 'BOM'.
+  t_fieldcat-col_pos = 12.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STLKN'.
+  t_fieldcat-seltext_m = 'Item Node'.
+  t_fieldcat-col_pos = 13.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'VGKNT'.
+  t_fieldcat-seltext_m = 'Previous Node'.
+  t_fieldcat-col_pos = 14.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'VGPZL'.
+  t_fieldcat-seltext_m = 'Prev Item Count'.
+  t_fieldcat-col_pos = 15.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STPOZ'.
+  t_fieldcat-seltext_m = 'Counter'.
+  t_fieldcat-col_pos = 16.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'DATUV'.
+  t_fieldcat-seltext_m = 'Valid From'.
+  t_fieldcat-col_pos = 17.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'AENNR'.
+  t_fieldcat-seltext_m = 'Change Number'.
+  t_fieldcat-col_pos = 18.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'AEDAT'.
+  t_fieldcat-seltext_m = 'Changed on'.
+  t_fieldcat-col_pos = 19.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'AENAM'.
+  t_fieldcat-seltext_m = 'Changed by'.
+  t_fieldcat-col_pos = 20.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'POSNR'.
+  t_fieldcat-seltext_m = 'Item'.
+  t_fieldcat-col_pos = 21.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'IDNRK'.
+  t_fieldcat-seltext_m = 'Component'.
+  t_fieldcat-no_zero = 'X'.
+  t_fieldcat-col_pos = 22.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'SORTF'.
+  t_fieldcat-seltext_m = 'Sort String'.
+  t_fieldcat-col_pos = 23.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MEINS'.
+  t_fieldcat-seltext_m = 'Component Unit'.
+  t_fieldcat-col_pos = 24.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MENGE'.
+  t_fieldcat-seltext_m = 'Quantity'.
+  t_fieldcat-col_pos = 25.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'KZAUS'.
+  t_fieldcat-seltext_m = 'Discontin. Ind.'.
+  t_fieldcat-col_pos = 26.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'AUSDT'.
+  t_fieldcat-seltext_m = 'Eff.-out date'.
+  t_fieldcat-col_pos = 27.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'NFMAT'.
+  t_fieldcat-seltext_m = 'Follow-Up Matl'.
+  t_fieldcat-col_pos = 28.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'KZNFP'.
+  t_fieldcat-seltext_m = 'Follow-Up Item'.
+  t_fieldcat-col_pos = 29.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'NFGRP'.
+  t_fieldcat-seltext_m = 'Follow-Up Group'.
+  t_fieldcat-col_pos = 30.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'NFEAG'.
+  t_fieldcat-seltext_m = 'Discont. Group'.
+  t_fieldcat-col_pos = 31.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'STDPD'.
+  t_fieldcat-seltext_m = 'Confble matl'.
+  t_fieldcat-no_zero = 'X'.
+  t_fieldcat-col_pos = 32.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MTART'.
+  t_fieldcat-seltext_m = 'Material Type'.
+  t_fieldcat-col_pos = 33.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZPRNUM_COMPN'.
+  t_fieldcat-seltext_m = 'Comp. Prof Number'.
+  t_fieldcat-outputlen = 15.
+  t_fieldcat-col_pos = 34.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZALLOY_COMPN'.
+  t_fieldcat-seltext_m = 'Component Alloy'.
+  t_fieldcat-outputlen = 15.
+  t_fieldcat-col_pos = 35.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZTEMPER_COMPN'.
+  t_fieldcat-seltext_m = 'Component Temper'.
+  t_fieldcat-outputlen = 15.
+  t_fieldcat-col_pos = 36.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZLENGTH_COMPN'.
+  t_fieldcat-seltext_m = 'Com.Profil Length'.
+  t_fieldcat-outputlen = 15.
+  t_fieldcat-col_pos = 37.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'SPART'.
+  t_fieldcat-seltext_m = 'Division'.
+  t_fieldcat-col_pos = 38.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'DISPO'.
+  t_fieldcat-seltext_m = 'MRP Controller'.
+  t_fieldcat-col_pos = 39.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZCOLOURCATEGORY'.
+  t_fieldcat-seltext_m = 'COLOURCATEGORY'.
+  t_fieldcat-outputlen = 15.
+  t_fieldcat-col_pos = 40.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'UMREZ'.
+  t_fieldcat-seltext_m = 'Numerator'.
+  t_fieldcat-col_pos = 41.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'UMREN'.
+  t_fieldcat-seltext_m = 'Denominator'.
+  t_fieldcat-col_pos = 42.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'UMREZ_COMPN'.
+  t_fieldcat-seltext_m = 'weight per PCS produce profile'.
+  t_fieldcat-col_pos = 43.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'UMREN_COMPN'.
+  t_fieldcat-seltext_m = 'Denominator per PCS produce profile '.
+  t_fieldcat-col_pos = 44.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'MAKTX1'.
+  t_fieldcat-seltext_m = 'Component Material Description'.
+  t_fieldcat-outputlen = 30.
+  t_fieldcat-col_pos = 45.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'ZLENGTH'.
+  t_fieldcat-seltext_m = 'Produced Profil Length'.
+  t_fieldcat-col_pos = 46.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'PRODUCE_PCS'.
+  t_fieldcat-seltext_m = 'Produce PCS'.
+  t_fieldcat-col_pos = 47.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'CONSUME_PCS'.
+  t_fieldcat-seltext_m = 'Consume PCS'.
+  t_fieldcat-col_pos = 48.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'PROD_PCS'.
+  t_fieldcat-seltext_m = 'prod.PCS_per_Length'.
+  t_fieldcat-col_pos = 49.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'KG_PRODUCE'.
+  t_fieldcat-seltext_m = 'Kg per pcs produce'.
+  t_fieldcat-col_pos = 50.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+  t_fieldcat-fieldname = 'KG_COMPONENT'.
+  t_fieldcat-seltext_m = 'Kg per pcs component'.
+  t_fieldcat-col_pos = 51.
+  APPEND t_fieldcat TO t_fieldcat.
+  CLEAR t_fieldcat.
+
+
+
+ENDFORM.
